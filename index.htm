@@ -1,0 +1,612 @@
+import React, { useState, useMemo } from 'react';
+import { 
+  Network, 
+  Server, 
+  Activity, 
+  Search, 
+  Router, 
+  Zap, 
+  LayoutList,
+  Menu,
+  X,
+  Cpu,
+  Layers,
+  Download,
+  Tag // Ícone para a nova coluna
+} from 'lucide-react';
+
+// --- DATA PARSING & STRUCTURE ---
+
+const OLT_DATA = [
+  // --- HUAWEI OLTS (DADOS ORIGINAIS) ---
+  {
+    id: 'jdpaulista',
+    vendor: 'Huawei',
+    name: 'OLT JD PAULISTA',
+    model: 'VIBE',
+    vlans: [
+      { id: 1, type: 'smart', attr: 'common', stnd: 8, serv: 0, desc: 'Default' },
+      { id: 150, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'PPPoE_TOPNET_JDPAULISTA' },
+      { id: 201, type: 'smart', attr: 'common', stnd: 2, serv: 12, desc: 'PPPoE_JDPAULISTA_JPNET' },
+      { id: 202, type: 'smart', attr: 'common', stnd: 2, serv: 2, desc: 'PPPoE_JDPAULISTA_67INTERNET' },
+      { id: 203, type: 'smart', attr: 'common', stnd: 2, serv: 6, desc: 'PPPoE_JDPAULISTA_FLEXTEL' },
+      { id: 204, type: 'smart', attr: 'common', stnd: 2, serv: 0, desc: 'PPPoE_JDPAULISTA_WIFINET' },
+      { id: 205, type: 'smart', attr: 'common', stnd: 2, serv: 7, desc: 'PPPoE_JDPAULISTA_CONNECT' },
+      { id: 999, type: 'smart', attr: 'common', stnd: 2, serv: 0, desc: 'GERENCIA' },
+      { id: 1282, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'PPPoE_JDPAULISTA_ALOPRIME' },
+      { id: 1283, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'CAMERAS_JDPAULISTA_ALOPRIME' },
+      { id: 1339, type: 'smart', attr: 'common', stnd: 2, serv: 1, desc: 'PPPoE_JDPAULISTA_CDLPLUS' },
+      { id: 1359, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'CVLAN_FREEWAY_ALL' },
+      { id: 1371, type: 'smart', attr: 'common', stnd: 1, serv: 1, desc: 'PPPoE_JDPAULISTA_FREEWAY' },
+      { id: 1381, type: 'smart', attr: 'common', stnd: 2, serv: 15, desc: 'PPPoE_JDPAULISTA_VIBE' },
+      { id: 1389, type: 'smart', attr: 'common', stnd: 1, serv: 1, desc: 'PPPoE_JDPAULISTA_I9' },
+    ]
+  },
+  {
+    id: 'camponobre',
+    vendor: 'Huawei',
+    name: 'OLT CAMPO NOBRE',
+    model: 'JPNET',
+    vlans: [
+      { id: 1, type: 'smart', attr: 'common', stnd: 8, serv: 0, desc: 'Default' },
+      { id: 11, type: 'standard', attr: 'common', stnd: 0, serv: 0, desc: '-' },
+      { id: 100, type: 'smart', attr: 'common', stnd: 8, serv: 816, desc: 'PPPoE_CAMPONOBRE_JPNET' },
+      { id: 102, type: 'smart', attr: 'common', stnd: 8, serv: 79, desc: 'PPPoE_CAMPONOBRE_67INTERNET' },
+      { id: 103, type: 'smart', attr: 'common', stnd: 8, serv: 366, desc: 'PPPoE_CAMPONOBRE_FLEXTEL' },
+      { id: 150, type: 'smart', attr: 'common', stnd: 8, serv: 323, desc: 'PPPoE_CAMPONOBRE_TOPNET' },
+      { id: 200, type: 'smart', attr: 'common', stnd: 4, serv: 36, desc: 'PPPoE_CAMPONOBRE_JPNET' },
+      { id: 999, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'GERENCIA' },
+      { id: 1005, type: 'smart', attr: 'common', stnd: 8, serv: 174, desc: 'PPPoE_CAMPONOBRE_CDLPLUS' },
+      { id: 1286, type: 'smart', attr: 'common', stnd: 1, serv: 1, desc: 'PPPoE_CAMPONOBRE_ALOPRIME' },
+      { id: 1287, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'CAMERAS_CAMPONOBRE_ALOPRIME' },
+      { id: 1332, type: 'smart', attr: 'common', stnd: 1, serv: 11, desc: 'PPPoE_CAMPONOBRE_LSFIBRA' },
+      { id: 1359, type: 'smart', attr: 'common', stnd: 1, serv: 8, desc: 'CVLAN_FREEWAY_ALL' },
+      { id: 1369, type: 'smart', attr: 'common', stnd: 1, serv: 284, desc: 'PPPoE_CAMPONOBRE_FREEWAY' },
+      { id: 1388, type: 'smart', attr: 'common', stnd: 1, serv: 126, desc: 'PPPoE_CAMPONOBRE_I9' },
+      { id: 1487, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'CVLAN_FREEWAY' },
+      { id: 3523, type: 'smart', attr: 'common', stnd: 8, serv: 1, desc: 'PPPoE_CAMPONOBRE_I9' },
+      { id: 3524, type: 'smart', attr: 'common', stnd: 8, serv: 53, desc: 'PPPoE_CAMPONOBRE_KSEFIBRA' },
+      { id: 3526, type: 'smart', attr: 'common', stnd: 8, serv: 36, desc: 'PPPoE_CAMPONOBRE_CAPITALNET' },
+      { id: 4014, type: 'smart', attr: 'common', stnd: 8, serv: 16, desc: 'PPPoE_CAMPONOBRE_CBNET' },
+      { id: 4015, type: 'smart', attr: 'common', stnd: 8, serv: 33, desc: 'PPPoE_CAMPONOBRE_WIFINET' },
+      { id: 4016, type: 'smart', attr: 'common', stnd: 8, serv: 75, desc: 'PPPoE_CAMPONOBRE_CONNECT' },
+    ]
+  },
+  {
+    id: 'dahma',
+    vendor: 'Huawei',
+    name: 'OLT DAHMA',
+    model: 'CONNECT',
+    vlans: [
+      { id: 1, type: 'smart', attr: 'common', stnd: 8, serv: 0, desc: 'Default' },
+      { id: 100, type: 'smart', attr: 'common', stnd: 4, serv: 26, desc: 'PPPoE_DAHMA_CONNECT' },
+      { id: 101, type: 'smart', attr: 'common', stnd: 2, serv: 0, desc: '-' },
+      { id: 102, type: 'smart', attr: 'common', stnd: 4, serv: 5, desc: 'PPPoE_DAHMA_FLEXTEL' },
+      { id: 103, type: 'smart', attr: 'common', stnd: 4, serv: 0, desc: 'PPPoE_DAHMA_67INTERNET' },
+      { id: 104, type: 'smart', attr: 'common', stnd: 4, serv: 0, desc: 'PPPoE_DAHMA_JPNET' },
+      { id: 105, type: 'smart', attr: 'common', stnd: 4, serv: 0, desc: 'PPPoE_DAHMA_WIFINET' },
+      { id: 1000, type: 'smart', attr: 'common', stnd: 3, serv: 0, desc: 'GERENCIA' },
+      { id: 3690, type: 'smart', attr: 'QinQ', stnd: 0, serv: 22, desc: 'L2L-RES_DAHMA' },
+    ]
+  },
+  {
+    id: 'noroeste',
+    vendor: 'Huawei',
+    name: 'OLT NOROESTE',
+    model: 'VIBE',
+    vlans: [
+      { id: 1, type: 'smart', attr: 'common', stnd: 8, serv: 0, desc: 'Default' },
+      { id: 150, type: 'smart', attr: 'common', stnd: 1, serv: 2, desc: 'PPPoE_NOROESTE_TOPNET' },
+      { id: 201, type: 'smart', attr: 'common', stnd: 2, serv: 35, desc: 'PPPoE_NOROESTE_JPNET' },
+      { id: 202, type: 'smart', attr: 'common', stnd: 2, serv: 7, desc: 'PPPoE_NOROESTE_67INTERNET' },
+      { id: 203, type: 'smart', attr: 'common', stnd: 2, serv: 3, desc: 'PPPoE_NOROESTE_FLEXTEL' },
+      { id: 204, type: 'smart', attr: 'common', stnd: 2, serv: 4, desc: 'PPPoE_NOROESTE_WIFINET' },
+      { id: 205, type: 'smart', attr: 'common', stnd: 2, serv: 6, desc: 'PPPoE_NOROESTE_CONNECT' },
+      { id: 999, type: 'smart', attr: 'common', stnd: 2, serv: 0, desc: 'GERENCIA' },
+      { id: 1284, type: 'smart', attr: 'common', stnd: 2, serv: 0, desc: 'PPPoE_NOROESTE_ALOPRIME' },
+      { id: 1285, type: 'smart', attr: 'common', stnd: 2, serv: 0, desc: 'CAMERAS_NOROESTE_ALOPRIME' },
+      { id: 1338, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'PPPoE_NOROESTE_CDLPLUS' },
+    ]
+  },
+  {
+    id: 'ritavieira',
+    vendor: 'Huawei',
+    name: 'OLT RITA VIEIRA',
+    model: 'CONNECT',
+    vlans: [
+      { id: 1, type: 'smart', attr: 'common', stnd: 8, serv: 0, desc: 'Default' },
+      { id: 100, type: 'smart', attr: 'common', stnd: 6, serv: 954, desc: 'PPPoE_RITAVIEIRA_CONNECT' },
+      { id: 102, type: 'smart', attr: 'common', stnd: 1, serv: 180, desc: 'PPPoE_RITAVIEIRA_FLEXTEL' },
+      { id: 103, type: 'smart', attr: 'common', stnd: 1, serv: 7, desc: 'PPPoE_RITAVIEIRA_67INTERNET' },
+      { id: 104, type: 'smart', attr: 'common', stnd: 2, serv: 7, desc: 'PPPoE_RITAVIEIRA_JPNET' },
+      { id: 105, type: 'smart', attr: 'common', stnd: 2, serv: 12, desc: 'PPPoE_RITAVIEIRA_WIFINET' },
+      { id: 150, type: 'smart', attr: 'common', stnd: 2, serv: 54, desc: 'PPPoE_RITAVIEIRA_TOPNET' },
+      { id: 1000, type: 'smart', attr: 'common', stnd: 8, serv: 0, desc: 'GERENCIA' },
+      { id: 1280, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'PPPoE_RITAVIEIRA_ALOPRIME' },
+      { id: 1281, type: 'smart', attr: 'common', stnd: 1, serv: 0, desc: 'CAMERAS_RITAVIEIRA_ALOPRIME' },
+      { id: 1331, type: 'smart', attr: 'common', stnd: 1, serv: 8, desc: 'PPPoE_RITAVIEIRA_LSFIBRA' },
+      { id: 1346, type: 'smart', attr: 'common', stnd: 1, serv: 9, desc: 'PPPoE_RITAVIEIRA_CDLPLUS' },
+      { id: 1359, type: 'smart', attr: 'common', stnd: 1, serv: 6, desc: 'CVLAN_FREEWAY_ALL' },
+      { id: 1368, type: 'smart', attr: 'common', stnd: 2, serv: 79, desc: 'PPPoE_RITAVIEIRA_FREEWAY' },
+      { id: 1395, type: 'smart', attr: 'common', stnd: 1, serv: 7, desc: 'PPPoE_RITAVIEIRA_I9' },
+      { id: 1488, type: 'smart', attr: 'common', stnd: 1, serv: 1, desc: 'CVLAN_FREEWAY' },
+      { id: 4014, type: 'smart', attr: 'common', stnd: 1, serv: 7, desc: 'PPPoE_RITAVIEIRA_CBNET' },
+    ]
+  },
+
+  // --- ZTE OLTS (NOVOS DADOS) ---
+  {
+    id: 'zte_jdaeroporto',
+    vendor: 'ZTE',
+    name: 'OLT JD AEROPORTO',
+    model: 'ZTE C320/C300',
+    vlans: [
+      { id: 1040, type: 'tagged', attr: '0x8100', stnd: 2, serv: 2, desc: 'PPPoE_JDAEROPORTO_NETWARE' },
+      { id: 1343, type: 'tagged', attr: '0x8100', stnd: 2, serv: 10, desc: 'PPPoE_JDAEROPORTO_CDLPLUS' },
+    ]
+  },
+  {
+    id: 'zte_caicara',
+    vendor: 'ZTE',
+    name: 'OLT CAICARA',
+    model: 'ZTE C320/C300',
+    vlans: [
+      { id: 150, type: 'tagged', attr: '0x8100', stnd: 2, serv: 125, desc: 'PPPoE_CAICARA_TOPNET' },
+      { id: 1347, type: 'tagged', attr: '0x8100', stnd: 2, serv: 18, desc: 'PPPoE_CAICARA_CDLPLUS' },
+      { id: 1394, type: 'tagged', attr: '0x8100', stnd: 2, serv: 5, desc: 'PPPoE_I9_CAICARA' },
+    ]
+  },
+  {
+    id: 'zte_jdinapolis',
+    vendor: 'ZTE',
+    name: 'OLT JD INAPOLIS',
+    model: 'ZTE C320/C300',
+    vlans: [
+      { id: 150, type: 'tagged', attr: '0x8100', stnd: 1, serv: 22, desc: 'PPPoE_JDINAPOLIS_TOPNET' },
+      { id: 1345, type: 'tagged', attr: '0x8100', stnd: 2, serv: 0, desc: 'PPPoE_JDINAPOLIS_CDLPLUS' },
+      { id: 1397, type: 'tagged', attr: '0x8100', stnd: 2, serv: 4, desc: 'PPPoE_I9_JDINAPOLIS' },
+      { id: 4014, type: 'tagged', attr: '0x8100', stnd: 2, serv: 65, desc: 'PPPoE_JDINAPOLIS_CBNET' },
+    ]
+  },
+  {
+    id: 'zte_jdtijuca',
+    vendor: 'ZTE',
+    name: 'OLT JD TIJUCA',
+    model: 'ZTE C320/C300',
+    vlans: [
+      { id: 150, type: 'tagged', attr: '0x8100', stnd: 2, serv: 85, desc: 'PPPoE_JDTIJUCA_TOPNET' },
+    ]
+  },
+  {
+    id: 'zte_nasser',
+    vendor: 'ZTE',
+    name: 'OLT NASSER',
+    model: 'ZTE C320/C300',
+    vlans: [
+      { id: 150, type: 'tagged', attr: '0x8100', stnd: 2, serv: 72, desc: 'PPPoE_NASSER_TOPNET' },
+      { id: 1341, type: 'tagged', attr: '0x8100', stnd: 2, serv: 1, desc: 'PPPoE_NASSER_CDLPLUS' },
+    ]
+  },
+  {
+    id: 'zte_ncg',
+    vendor: 'ZTE',
+    name: 'OLT NCG',
+    model: 'ZTE C320/C300',
+    vlans: [
+      { id: 150, type: 'tagged', attr: '0x8100', stnd: 2, serv: 95, desc: 'PPPoE_NCG_TOPNET' },
+      { id: 1040, type: 'tagged', attr: '0x8100', stnd: 2, serv: 2, desc: 'PPPoE_NCG_NETWARE' },
+      { id: 1344, type: 'tagged', attr: '0x8100', stnd: 2, serv: 0, desc: 'PPPoE_NCG_CDLPLUS' },
+    ]
+  },
+  {
+    id: 'zte_staemilia',
+    vendor: 'ZTE',
+    name: 'OLT STA EMILIA',
+    model: 'ZTE C320/C300',
+    vlans: [
+      { id: 150, type: 'tagged', attr: '0x8100', stnd: 2, serv: 110, desc: 'PPPoE_STAEMILIA_TOPNET' },
+      { id: 4014, type: 'tagged', attr: '0x8100', stnd: 2, serv: 55, desc: 'PPPoE_STAEMILIA_CBNET' },
+    ]
+  },
+  {
+    id: 'zte_stoamaro',
+    vendor: 'ZTE',
+    name: 'OLT STO AMARO',
+    model: 'ZTE C320/C300',
+    vlans: [
+      { id: 150, type: 'tagged', attr: '0x8100', stnd: 2, serv: 48, desc: 'PPPoE_STOAMARO_TOPNET' },
+      { id: 1342, type: 'tagged', attr: '0x8100', stnd: 2, serv: 0, desc: 'PPPoE_STOAMARO_CDLPLUS' },
+      { id: 1393, type: 'tagged', attr: '0x8100', stnd: 2, serv: 5, desc: 'PPPoE_STOAMARO_I9' },
+    ]
+  }
+];
+
+export default function App() {
+  const [selectedVendor, setSelectedVendor] = useState('Huawei');
+  const [selectedOltId, setSelectedOltId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Filter OLTs by vendor
+  const vendorOlts = useMemo(() => 
+    OLT_DATA.filter(olt => olt.vendor === selectedVendor), 
+  [selectedVendor]);
+
+  // Set default selection when vendor changes
+  React.useEffect(() => {
+    if (vendorOlts.length > 0) {
+      // Try to keep selection if ID exists in new list (unlikely with vendor switch), else pick first
+      const exists = vendorOlts.find(o => o.id === selectedOltId);
+      if (!exists) setSelectedOltId(vendorOlts[0].id);
+    }
+  }, [selectedVendor, vendorOlts]);
+
+  // Compute Active OLT
+  const activeOlt = useMemo(() => 
+    vendorOlts.find(olt => olt.id === selectedOltId) || vendorOlts[0] || OLT_DATA[0], 
+  [selectedOltId, vendorOlts]);
+
+  // Filter VLANs based on search
+  const filteredVlans = useMemo(() => {
+    if (!activeOlt) return [];
+    const query = searchQuery.toLowerCase();
+    return activeOlt.vlans.filter(vlan => 
+      vlan.id.toString().includes(query) || 
+      vlan.desc.toLowerCase().includes(query) ||
+      vlan.type.toLowerCase().includes(query)
+    );
+  }, [activeOlt, searchQuery]);
+
+  // Stats Calculation
+  const stats = useMemo(() => {
+    if (!activeOlt) return { totalVlans: 0, totalServPorts: 0, totalStndPorts: 0, busiestVlan: null };
+    const totalVlans = activeOlt.vlans.length;
+    const totalServPorts = activeOlt.vlans.reduce((acc, curr) => acc + curr.serv, 0);
+    const totalStndPorts = activeOlt.vlans.reduce((acc, curr) => acc + curr.stnd, 0);
+    
+    // Find the VLAN with most service ports
+    const busiestVlan = [...activeOlt.vlans].sort((a,b) => b.serv - a.serv)[0];
+
+    return { totalVlans, totalServPorts, totalStndPorts, busiestVlan };
+  }, [activeOlt]);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-blue-500 selection:text-white print:bg-white print:text-black print:p-0">
+      
+      {/* HEADER */}
+      <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-20 shadow-md print:hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center h-auto md:h-16 py-3 md:py-0 gap-3">
+            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+              <div className="flex items-center gap-3">
+                <div className={`${selectedVendor === 'Huawei' ? 'bg-red-600 shadow-red-500/20' : 'bg-blue-600 shadow-blue-500/20'} p-2 rounded-lg shadow-lg transition-colors duration-300`}>
+                  <Router className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold tracking-tight text-white leading-none">ISP Manager</h1>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mt-1">
+                    {selectedVendor} Ecosystem
+                  </p>
+                </div>
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button 
+                className="md:hidden p-2 text-slate-400 hover:text-white"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                {isMobileMenuOpen ? <X /> : <Menu />}
+              </button>
+            </div>
+
+            {/* VENDOR SWITCHER (The "Field" requested) */}
+            <div className="flex bg-slate-900/80 p-1 rounded-lg border border-slate-700 w-full md:w-auto">
+              <button
+                onClick={() => setSelectedVendor('Huawei')}
+                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-1.5 rounded-md text-sm font-bold transition-all ${
+                  selectedVendor === 'Huawei' 
+                    ? 'bg-red-600 text-white shadow-lg' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Cpu className="w-4 h-4" />
+                HUAWEI
+              </button>
+              <button
+                onClick={() => setSelectedVendor('ZTE')}
+                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-1.5 rounded-md text-sm font-bold transition-all ${
+                  selectedVendor === 'ZTE' 
+                    ? 'bg-blue-600 text-white shadow-lg' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                ZTE
+              </button>
+            </div>
+          </div>
+
+          {/* OLT Navigation Bar (Dynamic based on Vendor) */}
+          <div className="hidden md:flex space-x-1 py-2 overflow-x-auto scrollbar-hide">
+            {vendorOlts.map((olt) => (
+              <button
+                key={olt.id}
+                onClick={() => setSelectedOltId(olt.id)}
+                className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 border border-transparent ${
+                  selectedOltId === olt.id
+                    ? `bg-slate-700 text-white border-slate-600 shadow-sm ${selectedVendor === 'Huawei' ? 'border-b-red-500' : 'border-b-blue-500'} border-b-2`
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                {olt.name.replace('OLT ', '')}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Navigation Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-700 bg-slate-800 p-2 max-h-60 overflow-y-auto">
+             <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase">Selecione a OLT ({selectedVendor})</div>
+             {vendorOlts.map((olt) => (
+                <button
+                  key={olt.id}
+                  onClick={() => {
+                    setSelectedOltId(olt.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`block w-full text-left px-4 py-3 rounded-lg text-sm font-medium mb-1 ${
+                    selectedOltId === olt.id
+                      ? `${selectedVendor === 'Huawei' ? 'bg-red-600' : 'bg-blue-600'} text-white`
+                      : 'text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  {olt.name}
+                </button>
+              ))}
+          </div>
+        )}
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-0 print:w-full print:max-w-none">
+        
+        {/* DASHBOARD HEADER & STATS */}
+        <div className="mb-8 animate-fade-in-up print:mb-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4 print:mb-2">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                 <h2 className="text-3xl font-bold text-white print:text-black">
+                  {activeOlt ? activeOlt.name : 'Selecione uma OLT'}
+                </h2>
+                {activeOlt && (
+                  <span className={`text-xs align-top px-2 py-1 rounded border font-mono ${
+                    activeOlt.vendor === 'Huawei' 
+                      ? 'bg-red-900/30 text-red-300 border-red-800 print:text-red-800 print:bg-transparent print:border-red-800' 
+                      : 'bg-blue-900/30 text-blue-300 border-blue-800 print:text-blue-800 print:bg-transparent print:border-blue-800'
+                  }`}>
+                    {activeOlt.model}
+                  </span>
+                )}
+              </div>
+              <p className="text-slate-400 print:text-slate-600">
+                {activeOlt 
+                  ? `Relatório de Configuração: ${activeOlt.vendor}`
+                  : ''}
+              </p>
+            </div>
+            
+            {/* Search Bar & Download Button */}
+            <div className="flex gap-2 w-full md:w-auto print:hidden">
+              <div className="relative flex-grow md:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-slate-500" />
+                </div>
+                <input
+                  type="text"
+                  className="block w-full pl-10 pr-3 py-2 border border-slate-600 rounded-lg leading-5 bg-slate-800 text-slate-300 placeholder-slate-500 focus:outline-none focus:bg-slate-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                  placeholder="Buscar VLAN..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-lg font-medium"
+                title="Salvar como PDF"
+              >
+                <Download className="w-5 h-5" />
+                <span className="hidden sm:inline">PDF</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Stats Grid - Modified for Print to be cleaner */}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4 print:gap-2">
+            <StatCard 
+              title="Total VLANs" 
+              value={stats.totalVlans} 
+              icon={<Network className={`h-6 w-6 ${selectedVendor === 'Huawei' ? 'text-red-400' : 'text-blue-400'} print:text-black`} />}
+              color={selectedVendor === 'Huawei' ? 'red' : 'blue'}
+            />
+            <StatCard 
+              title="Service Ports" 
+              value={stats.totalServPorts} 
+              icon={<Activity className="h-6 w-6 text-emerald-400 print:text-black" />}
+              color="emerald"
+            />
+            <StatCard 
+              title="Uplink Ports" 
+              value={stats.totalStndPorts} 
+              icon={<Server className="h-6 w-6 text-indigo-400 print:text-black" />}
+              color="indigo"
+            />
+            <StatCard 
+              title="Maior Tráfego" 
+              value={stats.busiestVlan ? stats.busiestVlan.id : '-'} 
+              subtext={stats.busiestVlan?.desc.split('_').pop() || 'None'}
+              icon={<Zap className="h-6 w-6 text-amber-400 print:text-black" />}
+              color="amber"
+            />
+          </div>
+        </div>
+
+        {/* TABLE SECTION */}
+        <div className="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden print:bg-white print:border-slate-300 print:shadow-none">
+          <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50 print:bg-gray-50 print:border-gray-300">
+            <h3 className="text-lg font-medium text-white flex items-center gap-2 print:text-black">
+              <LayoutList className="h-5 w-5 text-slate-400 print:text-black" />
+              Tabela de Configuração
+            </h3>
+            <span className="text-xs font-mono text-slate-500 bg-slate-900 px-2 py-1 rounded print:bg-gray-200 print:text-black">
+              {filteredVlans.length} registros
+            </span>
+          </div>
+          
+          <div className="overflow-x-auto print:overflow-visible">
+            <table className="min-w-full divide-y divide-slate-700 print:divide-gray-300">
+              <thead className="bg-slate-900/50 print:bg-gray-100">
+                <tr>
+                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider print:text-black print:font-bold border-r border-slate-700/50 print:border-gray-300">Ref. Rápida</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider print:text-black print:font-bold border-r border-slate-700/50 print:border-gray-300">VLAN ID</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider print:text-black print:font-bold">Descrição / Serviço</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider print:text-black print:font-bold">Tipo</th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider print:text-black print:font-bold">Std Ports</th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider print:text-black print:font-bold">Srv Ports</th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider print:text-black print:font-bold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-slate-800 divide-y divide-slate-700 print:bg-white print:divide-gray-300">
+                {filteredVlans.length > 0 ? (
+                  filteredVlans.map((vlan) => (
+                    <tr key={vlan.id} className="hover:bg-slate-700/50 transition-colors duration-150 print:break-inside-avoid">
+                      <td className="px-6 py-4 whitespace-nowrap border-r border-slate-700/50 print:border-gray-200">
+                        <div className="flex items-center gap-2 text-sm text-blue-300 font-mono print:text-black">
+                           <Tag className="w-3 h-3 opacity-50 print:hidden" />
+                           {getFormattedTag(vlan)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap border-r border-slate-700/50 print:border-gray-200">
+                        <div className="flex items-center">
+                          <div className={`flex-shrink-0 h-8 w-12 rounded bg-slate-700 flex items-center justify-center text-xs font-bold ${activeOlt.vendor === 'Huawei' ? 'text-red-200 border-red-900' : 'text-blue-200 border-blue-900'} border print:bg-white print:text-black print:border-black`}>
+                            {vlan.id}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-white print:text-black">{vlan.desc}</div>
+                        <div className="text-xs text-slate-500 print:text-slate-600">{parseProviderName(vlan.desc)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded ${
+                          vlan.type === 'smart' ? 'bg-purple-900/30 text-purple-300 border border-purple-800 print:bg-transparent print:text-black print:border-black' : 
+                          vlan.type === 'standard' ? 'bg-slate-700 text-slate-300 border border-slate-600 print:bg-transparent print:text-black print:border-black' :
+                          'bg-cyan-900/30 text-cyan-300 border border-cyan-800 print:bg-transparent print:text-black print:border-black'
+                        }`}>
+                          {vlan.type}
+                        </span>
+                        {/* Only show attribute if it's not 'common' to save ink/space */}
+                        {vlan.attr !== 'common' && (
+                            <span className="ml-2 text-xs text-slate-500 font-mono print:text-black">
+                               {vlan.attr}
+                            </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-slate-300 font-mono print:text-black">
+                        {vlan.stnd}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-emerald-400 font-mono print:text-black">
+                        {vlan.serv}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                         <div className={`h-2.5 w-2.5 rounded-full mx-auto ${vlan.serv > 0 || vlan.stnd > 0 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] print:bg-black print:shadow-none' : 'bg-slate-600 print:bg-gray-200'}`}></div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                      Nenhuma VLAN encontrada para "{searchQuery}"
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// Helper Components & Functions
+function StatCard({ title, value, subtext, icon, color }) {
+  // Styles for screen
+  const colorClasses = {
+    blue: "bg-blue-500/10 border-blue-500/20",
+    red: "bg-red-500/10 border-red-500/20",
+    emerald: "bg-emerald-500/10 border-emerald-500/20",
+    indigo: "bg-indigo-500/10 border-indigo-500/20",
+    amber: "bg-amber-500/10 border-amber-500/20",
+  };
+
+  return (
+    <div className={`overflow-hidden rounded-xl border shadow-sm ${colorClasses[color] || 'bg-slate-800 border-slate-700'} print:bg-white print:border-slate-300 print:shadow-none`}>
+      <div className="p-5 print:p-3">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            {icon}
+          </div>
+          <div className="ml-5 w-0 flex-1">
+            <dl>
+              <dt className="truncate text-sm font-medium text-slate-400 print:text-slate-600">{title}</dt>
+              <dd>
+                <div className="text-2xl font-bold text-white print:text-black">{value}</div>
+                {subtext && <div className="text-xs text-slate-400 mt-1 truncate print:text-slate-600">{subtext}</div>}
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Format the tag as requested: "provider: vlan id"
+function getFormattedTag(vlan) {
+  let name = vlan.desc;
+  // Clean up common prefixes
+  name = name.replace(/^(PPPoE_|CVLAN_|CAMERAS_|L2L-RES_)/i, '');
+  
+  const parts = name.split('_');
+  
+  // List of known providers to prioritize if found in the name
+  const knownProviders = ['TOPNET', 'JPNET', 'FLEXTEL', '67INTERNET', 'WIFINET', 'CONNECT', 'ALOPRIME', 'CDLPLUS', 'FREEWAY', 'I9', 'VIBE', 'NETWARE', 'CBNET', 'LSFIBRA', 'KSEFIBRA', 'CAPITALNET'];
+  
+  let provider = parts.find(p => knownProviders.includes(p));
+  
+  // Fallback: use last part if not found, or whole name if no parts
+  if (!provider) {
+      provider = parts.length > 0 ? parts[parts.length - 1] : name;
+  }
+  
+  // If the description is "Default" or empty, handle gracefully
+  if (vlan.desc === 'Default' || vlan.desc === '-') {
+      return `default: vlan ${vlan.id}`;
+  }
+
+  return `${provider.toLowerCase()}: vlan ${vlan.id}`;
+}
+
+// Extract provider name from description for cleaner UI
+function parseProviderName(desc) {
+  if (!desc || desc === '-' || desc === 'Default') return '';
+  const parts = desc.split('_');
+  if (parts.length > 2) {
+    return parts[parts.length - 1]; // Usually the provider name is last
+  }
+  return '';
+}
